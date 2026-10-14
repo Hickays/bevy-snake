@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["games/g1_test"]
+members = ["games/g1_test", "games/g2_block_test"]
 
 [workspace.dependencies]
 bevy = "0.20.0"
