@@ -1,4 +1,3 @@
-use bevy::picking::events::PointerClick;
 use bevy::prelude::*;
 use g1_test::SquareColor;
 

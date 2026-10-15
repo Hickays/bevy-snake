@@ -1,15 +1,17 @@
+use super::change_color::SquareColor;
 use bevy::prelude::*;
 
-pub fn spawn_square(mut command: Commands) {
-    command.spawn((
+/// 矩形边长
+const SQUARE_SIZE: f32 = 100.;
+
+pub fn spawn_square(mut commands: Commands) {
+    commands.spawn((
         Sprite {
-            color: Color::srgb_u32(0x_ff0000),
-            custom_size: Some(vec2(100., 100.)),
+            custom_size: Some(Vec2::splat(SQUARE_SIZE)),
             ..Default::default()
         },
-        Transform {
-            translation: vec2(0., 0.).extend(0.),
-            ..Default::default()
-        },
+        SquareColor::new(),
+        Pickable::default(),
+        Transform::from_translation(Vec3::ZERO),
     ));
 }

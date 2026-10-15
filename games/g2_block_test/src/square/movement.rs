@@ -1,45 +1,62 @@
 use bevy::prelude::*;
 
+/// 按 WASD / 方向键移动方块, 按住 Shift 加速, 并限制在窗口内
 pub fn move_square(
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
     mut squares: Query<(&Sprite, &mut Transform)>,
     windows: Query<&Window>,
 ) {
-    let (direction, speed) = {
-        let mut direction = Vec2::ZERO;
-
-        // 计算方向
-        for key in keys.get_pressed() {
-            direction += match key {
-                KeyCode::KeyW | KeyCode::ArrowUp => Vec2::Y,
-                KeyCode::KeyS | KeyCode::ArrowDown => -Vec2::Y,
-                KeyCode::KeyA | KeyCode::ArrowLeft => -Vec2::X,
-                KeyCode::KeyD | KeyCode::ArrowRight => Vec2::X,
-                _ => Vec2::ZERO,
-            }
+    // 计算方向
+    let mut direction = Vec2::ZERO;
+    for key in keys.get_pressed() {
+        direction += match key {
+            KeyCode::KeyW | KeyCode::ArrowUp => Vec2::Y,
+            KeyCode::KeyS | KeyCode::ArrowDown => -Vec2::Y,
+            KeyCode::KeyA | KeyCode::ArrowLeft => -Vec2::X,
+            KeyCode::KeyD | KeyCode::ArrowRight => Vec2::X,
+            _ => Vec2::ZERO,
         }
+    }
 
-        let direction = direction.normalize_or_zero();
+    // 归一化, 避免斜向移动更快
+    let direction = direction.normalize_or_zero();
+    if direction == Vec2::ZERO {
+        return;
+    }
 
-        let speed_up = keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]);
+    // 是否加速, 并计算速度
+    let speed_up = keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]);
+    let speed = if speed_up { 300. } else { 200. };
 
-        let speed = match () {
-            _ if direction == Vec2::ZERO => 0.,
-            _ if speed_up => 300.,
-            _ => 200.,
-        };
-
-        (direction, speed)
-    };
-
-    if speed <= 0. {
+    // 获取窗口尺寸
+    let Ok(window) = windows.single() else {
         return;
     };
+    let window_size = window.size();
 
-    for (_, mut transform) in &mut squares {
-        let direction = direction * speed * time.delta_secs();
-        let new_position = direction.extend(transform.translation.z);
-        transform.translation += new_position;
+    // 本帧的移动量
+    let displacement = direction * speed * time.delta_secs();
+
+    for (square, mut transform) in &mut squares {
+        // 获取矩形尺寸
+        let Some(square_size) = square.custom_size else {
+            continue;
+        };
+
+        // 计算窗口边界 (矩形不能超出的部分: 窗口尺寸 - 矩形尺寸的一半)
+        let window_boundary = (window_size - square_size) / 2.;
+        if window_boundary.x < 0. || window_boundary.y < 0. {
+            continue;
+        }
+
+        // 计算新坐标
+        let new_position = transform.translation.truncate() + displacement;
+
+        // 限制在边界内移动
+        let new_position = new_position.clamp(-window_boundary, window_boundary);
+
+        // 设置新坐标
+        transform.translation = new_position.extend(transform.translation.z);
     }
 }
