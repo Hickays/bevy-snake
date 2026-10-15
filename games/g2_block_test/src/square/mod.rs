@@ -19,8 +19,12 @@ impl Plugin for SquarePlugin {
 
         // 移动矩形
         app.add_systems(Update, movement::move_square);
-        // 点击改变颜色
-        app.add_observer(change_color::init_square_color);
+        // 同步颜色
+        app.add_systems(Update, change_color::apply_color);
+
+        // 初始化颜色
+        // app.add_observer(change_color::init_square_color);
+
         app.add_observer(change_color::click_square);
     }
 }

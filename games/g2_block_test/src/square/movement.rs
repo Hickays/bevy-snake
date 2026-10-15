@@ -4,7 +4,7 @@ use bevy::prelude::*;
 pub fn move_square(
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
-    mut squares: Query<(&Sprite, &mut Transform)>,
+    squares: Query<(&Sprite, &mut Transform)>,
     windows: Query<&Window>,
 ) {
     // 计算方向
@@ -27,7 +27,7 @@ pub fn move_square(
 
     // 是否加速, 并计算速度
     let speed_up = keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]);
-    let speed = if speed_up { 300. } else { 200. };
+    let speed = if speed_up { 500. } else { 300. };
 
     // 获取窗口尺寸
     let Ok(window) = windows.single() else {
@@ -38,7 +38,7 @@ pub fn move_square(
     // 本帧的移动量
     let displacement = direction * speed * time.delta_secs();
 
-    for (square, mut transform) in &mut squares {
+    for (square, mut transform) in squares {
         // 获取矩形尺寸
         let Some(square_size) = square.custom_size else {
             continue;
