@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use bevy::{platform::collections::HashMap, prelude::*};
+use bevy::{input::keyboard::KeyboardInput, platform::collections::HashMap, prelude::*};
 
 mod grid;
 mod snake;
@@ -11,6 +11,8 @@ impl Plugin for GridsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, startup_system);
         app.add_systems(Update, apply_snake_grid);
+        app.add_systems(Update, apply_snake_body);
+        app.add_systems(Update, handle_move);
     }
 }
 
@@ -51,14 +53,43 @@ fn startup_system(mut commands: Commands) {
 fn apply_snake_grid(query: Query<(&mut Sprite, &grid::SnakeGrid), Changed<grid::SnakeGrid>>) {
     for (mut sprite, snake_grid) in query {
         info!("改变颜色");
+        // info!("")
         sprite.color = snake_grid.get_color()
     }
 }
 
-fn apply_snake_body(query: Query<&mut grid::SnakeGrid, Changed<SnakeData>>) {
-  for mut snake_grid in query {
-    
-  }
+fn apply_snake_body(
+    mut query: Query<&mut grid::SnakeGrid>,
+    grid_index: ResMut<SnakeGridIndex>,
+    snake_data: Res<SnakeData>,
+) {
+    if snake_data.is_changed() {
+        info!("bl: {:?}", &snake_data.body_list);
+        for body in &snake_data.body_list {
+            let Some(entity) = grid_index.snake_grids.get(body) else {
+                info!("gi: {:?}", grid_index.snake_grids);
+                continue;
+            };
+            
+            let Ok(mut e) = query.get_mut(*entity) else {
+                continue;
+            };
+            info!("设置: {:?} 为 {:?}", body, e.get_color());
+            
+            e.as_snake_body();
+
+        }
+    }
+
+    // for mut snake_grid in query {}
+}
+
+fn handle_move(keys: Res<ButtonInput<KeyCode>>, mut snake_data: ResMut<SnakeData>) {
+    if keys.just_pressed(KeyCode::Space) {
+        let b = &mut snake_data.body_list;
+        b.push_front(IVec2 { x: 210, y: -126 });
+        info!("更新: {:?}", b);
+    };
 }
 
 #[derive(Resource)]
@@ -69,5 +100,5 @@ struct SnakeGridIndex {
 
 #[derive(Resource)]
 struct SnakeData {
-    body_list: VecDeque<IVec2>,
+    pub body_list: VecDeque<IVec2>,
 }
