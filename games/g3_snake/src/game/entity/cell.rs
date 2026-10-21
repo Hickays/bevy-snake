@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use crate::{config::{CELL_SIZE, GRID_GAP, GRID_SIZE}, game::res::GridMap};
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CellType {
     Empty,
@@ -9,7 +11,7 @@ pub enum CellType {
 
 #[derive(Component, Clone, Copy)]
 pub struct Cell {
-    grid_pos: IVec2,
+    pub grid_pos: IVec2,
     world_pos: Vec2,
     cell_type: CellType,
 }
@@ -22,19 +24,11 @@ impl Cell {
     pub fn as_type(&mut self, cell_type: CellType) {
         self.cell_type = cell_type
     }
-
-    pub fn eq_grid_pos(&self, grid_pos: IVec2) -> bool {
-        self.grid_pos == grid_pos
-    }
 }
 
-const GRID_SIZE: u16 = 21;
-const CELL_SIZE: f32 = 20.;
-const GRID_GAP: f32 = 1.;
-
-pub fn spawn_grid(mut commands: Commands) {
+pub fn spawn_grid(mut commands: Commands, mut grid_map: ResMut<GridMap>) {
     for cell in build_cell_matrix() {
-        commands.spawn((
+        let entity = commands.spawn((
             cell,
             Sprite {
                 custom_size: Some(Vec2::splat(CELL_SIZE)),
@@ -42,13 +36,14 @@ pub fn spawn_grid(mut commands: Commands) {
                 ..Default::default()
             },
             Transform::from_translation(cell.world_pos.clone().extend(0.)),
-        ));
+        )).id();
+
+        grid_map.add_cell(cell.grid_pos, entity);
     }
 }
 
 pub fn update_cell(query: Query<(&mut Sprite, &Cell), Changed<Cell>>) {
     for (mut sprite, cell) in query {
-      info!("更新格");
         sprite.color = match cell.cell_type {
             CellType::Empty => Color::srgb_u32(0x_444444),
             CellType::Food => Color::srgb_u32(0x_ff4242),
