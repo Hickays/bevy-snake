@@ -1,4 +1,3 @@
-
 use bevy::prelude::*;
 
 use std::collections::HashMap;
@@ -6,6 +5,7 @@ use std::collections::VecDeque;
 
 pub mod food;
 use crate::config::GRID_SIZE;
+use crate::game::res::food::SnakeFood;
 
 use super::entity::Cell;
 use super::entity::CellType;
@@ -24,7 +24,7 @@ pub struct SnakeState {
     /// body 列表
     pub body_list: VecDeque<IVec2>,
     /// 食物列表
-    pub food_list: VecDeque<IVec2>,
+    // pub food_list: VecDeque<IVec2>,
     /// 当前方向
     pub current_direction: IVec2,
     /// 输入队列, 接收输入时从后往前比较, 如果相反则覆盖
@@ -89,7 +89,7 @@ impl SnakeState {
     }
 
     /// 前进一步
-    pub fn step_forward(&mut self) {
+    pub fn step_forward(&mut self, mut snake_food: ResMut<SnakeFood>) {
         // 获取头的位置, 随后基于头位置 + 方向计算头的下一步位置
         let Some(head_pos) = self.body_list.front() else {
             return;
@@ -102,15 +102,17 @@ impl SnakeState {
             .unwrap_or(self.current_direction);
         self.current_direction = new_direction;
 
-        // 去掉尾巴
-        self.body_list.pop_back();
-
         let head_new_pos = head_pos + new_direction;
 
         // 根据边界范围修改头位置
         let boundary = IVec2::splat(GRID_SIZE as i32 / 2);
         let head_new_pos =
             (head_new_pos + boundary).rem_euclid(IVec2::splat(GRID_SIZE as i32)) - boundary;
+
+        if !snake_food.try_eat_food(&head_new_pos) {
+          // 去掉尾巴
+          self.body_list.pop_back();
+        }
 
         // 将头加入
         self.body_list.push_front(head_new_pos);
@@ -121,9 +123,7 @@ impl SnakeState {
         self.direction_queue.pop_front()
     }
 
-    fn create_rand_food(&mut self) {
-      
-    }
+    fn create_rand_food(&mut self) {}
 }
 
 #[derive(Resource)]
