@@ -25,7 +25,7 @@ impl SnakeFood {
             return false;
         }
 
-        self.food_list.retain(|p| p == food_pos);
+        self.food_list.retain(|p| p != food_pos);
         info!("吃到了");
         return true;
     }
