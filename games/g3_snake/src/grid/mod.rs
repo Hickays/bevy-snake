@@ -3,14 +3,16 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 
 use crate::config::GameConfig;
+pub mod message;
 
 pub(super) fn plugin(app: &mut App) {
     app.insert_resource(GridMap::default());
+    app.add_message::<message::SyncCellTypeMessage>();
     app.add_systems(Startup, startup_spawn);
-    app.add_systems(Update, sync_cell);
+    app.add_systems(Update, (handle_sync_cell_type_message, sync_cell).chain());
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CellType {
     Empty,
     Snake,
@@ -29,16 +31,20 @@ impl CellType {
 
 #[derive(Component, Clone, Copy)]
 pub struct Cell {
-    cell_type: CellType,
+    pub cell_type: CellType,
 
-    grid_pos: IVec2,
+    pub grid_pos: IVec2,
     world_pos: Vec2,
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Deref)]
 pub struct GridMap(HashMap<IVec2, Entity>);
 
-fn startup_spawn(mut commands: Commands, game_config: Res<GameConfig>, mut grid_map: ResMut<GridMap>) {
+fn startup_spawn(
+    mut commands: Commands,
+    game_config: Res<GameConfig>,
+    mut grid_map: ResMut<GridMap>,
+) {
     for cell in build_cells(&game_config) {
         let entity = commands
             .spawn((
@@ -80,5 +86,30 @@ fn build_cells(config: &GameConfig) -> Vec<Cell> {
 fn sync_cell(query: Query<(&mut Sprite, &Cell), Changed<Cell>>) {
     for (mut sprite, cell) in query {
         sprite.color = cell.cell_type.get_color()
+    }
+}
+
+fn handle_sync_cell_type_message(
+    mut messages: MessageReader<message::SyncCellTypeMessage>,
+    grid_map: Res<GridMap>,
+    mut cells: Query<&mut Cell>,
+) {
+    for message in messages.read() {
+        info!("收到同步消息");
+        for (pos, cell_type) in message.get_data() {
+            let Some(entity) = grid_map.get(pos) else {
+                continue;
+            };
+
+            let Ok(mut cell) = cells.get_mut(*entity) else {
+                continue;
+            };
+
+            info!("同步网格");
+
+            if &cell.cell_type != cell_type {
+                cell.cell_type = *cell_type
+            }
+        }
     }
 }
