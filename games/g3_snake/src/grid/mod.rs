@@ -1,10 +1,13 @@
-use std::collections::HashMap;
-
+//! 网格
 use bevy::prelude::*;
 
-use crate::config::GameConfig;
+use std::collections::HashMap;
+
 pub mod message;
 
+use crate::config::GameConfig;
+
+/// 网格相关
 pub(super) fn plugin(app: &mut App) {
     app.insert_resource(GridMap::default());
     app.add_message::<message::SyncCellTypeMessage>();
@@ -12,6 +15,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, (handle_sync_cell_type_message, sync_cell).chain());
 }
 
+/// 网格类型: 空格, 蛇体节格, 食物格
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CellType {
     Empty,
@@ -29,6 +33,7 @@ impl CellType {
     }
 }
 
+/// 网格组件, 记录真实坐标, 转换坐标, 网格类型
 #[derive(Component, Clone, Copy)]
 pub struct Cell {
     pub cell_type: CellType,
@@ -37,9 +42,11 @@ pub struct Cell {
     world_pos: Vec2,
 }
 
+/// 网格地图资源, 保存坐标和网格实体的对应关系
 #[derive(Resource, Default, Deref)]
 pub struct GridMap(HashMap<IVec2, Entity>);
 
+/// 创建网格
 fn startup_spawn(
     mut commands: Commands,
     game_config: Res<GameConfig>,
@@ -62,6 +69,7 @@ fn startup_spawn(
     }
 }
 
+/// 构建网格
 fn build_cells(config: &GameConfig) -> Vec<Cell> {
     let [width, height] = config.grid_extent.to_array();
     let mut matrix = Vec::with_capacity((width * height) as usize);
@@ -83,19 +91,20 @@ fn build_cells(config: &GameConfig) -> Vec<Cell> {
     matrix
 }
 
+/// 同步网格 (主要同步颜色)
 fn sync_cell(query: Query<(&mut Sprite, &Cell), Changed<Cell>>) {
     for (mut sprite, cell) in query {
         sprite.color = cell.cell_type.get_color()
     }
 }
 
+/// 处理同步网格的消息
 fn handle_sync_cell_type_message(
     mut messages: MessageReader<message::SyncCellTypeMessage>,
     grid_map: Res<GridMap>,
     mut cells: Query<&mut Cell>,
 ) {
     for message in messages.read() {
-        info!("收到同步消息");
         for (pos, cell_type) in message.get_data() {
             let Some(entity) = grid_map.get(pos) else {
                 continue;
@@ -104,8 +113,6 @@ fn handle_sync_cell_type_message(
             let Ok(mut cell) = cells.get_mut(*entity) else {
                 continue;
             };
-
-            info!("同步网格");
 
             if &cell.cell_type != cell_type {
                 cell.cell_type = *cell_type

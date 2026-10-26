@@ -1,5 +1,5 @@
+//! 游戏配置
 use bevy::prelude::*;
-use bevy::math::UVec2;
 
 pub mod window;
 
@@ -7,8 +7,8 @@ pub mod window;
 // pub const CELL_SIZE: f32 = 20.;
 // pub const GRID_GAP: f32 = 1.;
 
-#[derive(Resource)]
 /// 游戏配置
+#[derive(Resource)]
 pub struct GameConfig {
     /// 网格范围
     pub grid_extent: UVec2,

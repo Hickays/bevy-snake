@@ -2,13 +2,12 @@ use bevy::prelude::*;
 
 mod camera;
 mod config;
+mod food;
 mod grid;
 mod input;
 mod snake;
-mod food;
-// mod grids;
-
-// mod game;
+#[allow(dead_code)]
+mod status;
 
 fn main() {
     let mut app = App::new();
@@ -21,7 +20,7 @@ fn main() {
     app.add_plugins(grid::plugin);
     app.add_plugins(snake::plugin);
     app.add_plugins(food::plugin);
-    // app.add_plugins(game::SnakePlugin);
+    app.add_plugins(status::plugin);
 
     app.run();
 }

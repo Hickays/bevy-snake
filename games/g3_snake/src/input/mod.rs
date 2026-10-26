@@ -1,5 +1,7 @@
+//! 输入
 use bevy::prelude::*;
 
+/// 方向输入消息
 #[derive(Message)]
 pub enum DirectionInput {
     Up,
@@ -9,6 +11,7 @@ pub enum DirectionInput {
 }
 
 impl DirectionInput {
+    /// 方向转为方向向量
     pub fn as_ivec2(&self) -> IVec2 {
         match self {
             DirectionInput::Up => IVec2::Y,
@@ -19,6 +22,7 @@ impl DirectionInput {
     }
 }
 
+/// 游戏行为消息
 #[derive(Message)]
 pub enum GameAction {
     TogglePause,
@@ -32,6 +36,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, (emit_direction_input, emit_game_action));
 }
 
+/// 发送方向消息
 fn emit_direction_input(
     keys: Res<ButtonInput<KeyCode>>,
     mut direction_input: MessageWriter<DirectionInput>,
@@ -48,6 +53,7 @@ fn emit_direction_input(
     }
 }
 
+/// 发送游戏行为消息
 fn emit_game_action(keys: Res<ButtonInput<KeyCode>>, mut game_action: MessageWriter<GameAction>) {
     for key in keys.get_just_pressed() {
         let action = match key {
