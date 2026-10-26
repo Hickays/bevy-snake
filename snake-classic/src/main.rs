@@ -1,3 +1,4 @@
+//! 经典贪吃蛇
 use bevy::prelude::*;
 
 mod camera;
@@ -9,6 +10,7 @@ mod snake;
 #[allow(dead_code)]
 mod status;
 
+// cargo
 fn main() {
     let mut app = App::new();
 

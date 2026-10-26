@@ -1,7 +1,8 @@
 [package]
-name = "g2_block_test"
+name = "snake-classic"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 bevy = { workspace = true }
+rand = { workspace = true }
