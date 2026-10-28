@@ -8,7 +8,7 @@
 
 ## Crate
 
-- `snake-classic`：经典网格贪吃蛇模式。（开发中）
+- `snake-classic`：经典网格贪吃蛇模式。
 
 ## 运行
 

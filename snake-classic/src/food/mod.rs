@@ -6,7 +6,10 @@ use rand::seq::IndexedMutRandom;
 mod message;
 mod timer;
 
-use crate::grid::{Cell, CellType};
+use crate::{
+    grid::{Cell, CellType},
+    status::GameState,
+};
 
 pub use message::*;
 
@@ -15,26 +18,40 @@ pub(super) fn plugin(app: &mut App) {
     app.insert_resource(timer::FoodCreateTimer::new());
     app.insert_resource(SnakeFoodState::default());
 
-    app.add_systems(Startup, startup_create_food);
+    app.add_systems(OnEnter(GameState::Ready), startup_create_food);
+
     app.add_systems(Update, create_food);
-    app.add_systems(Update, interval_create_food);
+
+    app.add_systems(
+        Update,
+        (interval_create_food).run_if(in_state(GameState::Playing)),
+    );
+}
+
+pub fn ready(mut snake_food: ResMut<SnakeFoodState>, mut timer: ResMut<timer::FoodCreateTimer>) {
+    timer.reset();
+    snake_food.reset();
 }
 
 /// 食物状态资源
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct SnakeFoodState {
-    pub food_list: Vec<IVec2>,
+    pub foods: Vec<IVec2>,
 }
 
 impl SnakeFoodState {
+    fn reset(&mut self) {
+        self.foods.clear();
+    }
+
     /// 尝试吃食物, 吃到后返回 true
     pub fn try_eat_food(&mut self, food_pos: &IVec2) -> bool {
-        // info!("尝试吃: {food_pos:?}, [{:?}]", &self.food_list);
-        if !self.food_list.contains(food_pos) {
+        // info!("尝试吃: {food_pos:?}, [{:?}]", &self.foods);
+        if !self.foods.contains(food_pos) {
             return false;
         }
 
-        self.food_list.retain(|p| p != food_pos);
+        self.foods.retain(|p| p != food_pos);
         // info!("吃到了");
         return true;
     }

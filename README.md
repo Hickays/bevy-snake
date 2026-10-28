@@ -8,7 +8,7 @@ A Snake project built with Bevy.
 
 ## Crates
 
-- `snake-classic`: Classic grid-based Snake mode. _(in development)_
+- `snake-classic`: Classic grid-based Snake mode.
 
 ## Run
 

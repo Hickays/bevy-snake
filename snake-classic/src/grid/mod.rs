@@ -16,7 +16,7 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 /// 网格类型: 空格, 蛇体节格, 食物格
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CellType {
     Empty,
     Snake,
@@ -69,6 +69,12 @@ fn startup_spawn(
     }
 }
 
+pub fn ready(cells: Query<&mut Cell>) {
+    for mut cell in cells {
+        cell.cell_type = CellType::Empty
+    }
+}
+
 /// 构建网格
 fn build_cells(config: &GameConfig) -> Vec<Cell> {
     let [width, height] = config.grid_extent.to_array();
@@ -105,7 +111,7 @@ fn handle_sync_cell_type_message(
     mut cells: Query<&mut Cell>,
 ) {
     for message in messages.read() {
-        for (pos, cell_type) in message.get_data() {
+        for (pos, cell_type) in &message.changes {
             let Some(entity) = grid_map.get(pos) else {
                 continue;
             };

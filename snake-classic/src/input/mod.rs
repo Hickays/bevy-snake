@@ -23,8 +23,9 @@ impl DirectionInput {
 }
 
 /// 游戏行为消息
-#[derive(Message)]
+#[derive(Message, Debug)]
 pub enum GameAction {
+    StartGame,
     TogglePause,
     Retry,
 }
@@ -40,6 +41,7 @@ pub(super) fn plugin(app: &mut App) {
 fn emit_direction_input(
     keys: Res<ButtonInput<KeyCode>>,
     mut direction_input: MessageWriter<DirectionInput>,
+    mut game_action: MessageWriter<GameAction>,
 ) {
     for key in keys.get_just_pressed() {
         let direction = match key {
@@ -49,6 +51,7 @@ fn emit_direction_input(
             KeyCode::KeyD | KeyCode::ArrowRight => DirectionInput::Right,
             _ => continue,
         };
+        game_action.write(GameAction::StartGame);
         direction_input.write(direction);
     }
 }
@@ -57,7 +60,8 @@ fn emit_direction_input(
 fn emit_game_action(keys: Res<ButtonInput<KeyCode>>, mut game_action: MessageWriter<GameAction>) {
     for key in keys.get_just_pressed() {
         let action = match key {
-            KeyCode::Escape => GameAction::TogglePause,
+            // KeyCode::Space => GameAction::StartGame,
+            KeyCode::Space => GameAction::TogglePause,
             KeyCode::KeyR => GameAction::Retry,
             _ => continue,
         };
