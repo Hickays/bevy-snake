@@ -7,8 +7,8 @@ mod message;
 mod timer;
 
 use crate::{
-    grid::{Cell, CellType},
-    status::GameState,
+    core::grid::{Cell, CellType},
+    core::state::GameState,
 };
 
 pub use message::*;
@@ -28,7 +28,7 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-pub fn ready(mut snake_food: ResMut<SnakeFoodState>, mut timer: ResMut<timer::FoodCreateTimer>) {
+pub fn reset_food_for_ready(mut snake_food: ResMut<SnakeFoodState>, mut timer: ResMut<timer::FoodCreateTimer>) {
     timer.reset();
     snake_food.reset();
 }

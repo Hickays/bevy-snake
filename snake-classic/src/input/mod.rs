@@ -1,6 +1,8 @@
 //! 输入
 use bevy::prelude::*;
 
+use crate::core::action::GameAction;
+
 /// 方向输入消息
 #[derive(Message)]
 pub enum DirectionInput {
@@ -22,17 +24,8 @@ impl DirectionInput {
     }
 }
 
-/// 游戏行为消息
-#[derive(Message, Debug)]
-pub enum GameAction {
-    StartGame,
-    TogglePause,
-    Retry,
-}
-
 pub(super) fn plugin(app: &mut App) {
     app.add_message::<DirectionInput>();
-    app.add_message::<GameAction>();
 
     app.add_systems(Update, (emit_direction_input, emit_game_action));
 }

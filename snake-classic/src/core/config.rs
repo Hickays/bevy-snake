@@ -1,11 +1,9 @@
 //! 游戏配置
 use bevy::prelude::*;
 
-pub mod window;
-
-// pub const GRID_SIZE: u16 = 21;
-// pub const CELL_SIZE: f32 = 20.;
-// pub const GRID_GAP: f32 = 1.;
+pub(super) fn plugin(app: &mut App) {
+    app.init_resource::<GameConfig>();
+}
 
 /// 游戏配置
 #[derive(Resource)]
@@ -26,8 +24,4 @@ impl Default for GameConfig {
             cell_gap: 1.,
         }
     }
-}
-
-pub(super) fn plugin(app: &mut App) {
-  app.insert_resource(GameConfig::default());
 }

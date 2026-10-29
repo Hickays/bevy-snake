@@ -1,7 +1,7 @@
 //! 界面 ui
 use bevy::{prelude::*, sprite::Anchor};
 
-use crate::status::{self, GameState};
+use crate::core::{state::GameState, stats::GameStatus};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(Startup, startup_spawn);
@@ -46,7 +46,7 @@ fn startup_spawn(mut commands: Commands, game_state: Res<State<GameState>>) {
 
 fn update_score(
     mut score_text: Single<&mut Text2d, With<ScoreText>>,
-    game_status: Res<status::GameStatus>,
+    game_status: Res<GameStatus>,
 ) {
     score_text.0 = format!("Score: {}", game_status.score);
 }

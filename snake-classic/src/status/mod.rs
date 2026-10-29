@@ -4,8 +4,6 @@ use bevy::prelude::*;
 use crate::input;
 
 pub(super) fn plugin(app: &mut App) {
-    app.init_state::<GameState>();
-    app.init_resource::<GameStatus>();
     app.add_systems(OnEnter(GameState::Ready), resert_status);
     app.add_systems(Update, handle_game_action);
 }
@@ -44,30 +42,3 @@ fn handle_game_action(
     }
 }
 
-#[derive(States, Default, Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub enum GameState {
-    /// 就绪
-    #[default]
-    Ready,
-    /// 运行中
-    Playing,
-    /// 暂停
-    Paused,
-    /// 结束
-    GameOver,
-}
-
-#[derive(Resource, Default)]
-pub struct GameStatus {
-    pub score: u16,
-}
-
-impl GameStatus {
-    pub fn add_score(&mut self) {
-        self.score += 1;
-    }
-
-    fn reset(&mut self) {
-        self.score = 0;
-    }
-}

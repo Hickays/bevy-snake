@@ -5,11 +5,15 @@ use std::collections::VecDeque;
 mod timer;
 
 use crate::{
-    config::GameConfig,
+    core::{
+        config::GameConfig,
+        grid::{Cell, CellType, GridMap},
+        state::GameState,
+        stats::GameStatus,
+    },
     food::SnakeFoodState,
-    grid::{CellType, message::SyncCellTypeMessage},
     input::DirectionInput,
-    status::{GameState, GameStatus},
+    // status::{GameState, GameStatus},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -29,7 +33,6 @@ fn handle_direction_input(
     mut direction_input: MessageReader<DirectionInput>,
 ) {
     for direction in direction_input.read() {
-        // info!("获取输入 {}", direction.as_ivec2());
         snake_state.try_buffer_direction(direction.as_ivec2());
     }
 }
@@ -39,19 +42,28 @@ pub enum MoveOutcome {
     Advanced { enter: IVec2, leave: Option<IVec2> },
     AteFood { food: IVec2 },
     Collided,
+    None,
 }
 
-pub fn ready(
+pub fn reset_snake_for_ready(
     mut snake_state: ResMut<SnakeState>,
     mut timer: ResMut<timer::SnakeMoveTimer>,
     game_config: Res<GameConfig>,
-    mut sync_cell_message: MessageWriter<SyncCellTypeMessage>,
+    grid_map: Res<GridMap>,
+    mut cells: Query<&mut Cell>,
 ) {
     timer.reset();
     snake_state.reset((game_config.grid_extent / UVec2::splat(2)).as_ivec2());
-    sync_cell_message.write(
-        SyncCellTypeMessage::default().cells(snake_state.segment_list.clone(), CellType::Snake),
-    );
+
+    for segment in &snake_state.segment_list {
+        let Some(entity) = grid_map.get_entity(segment) else {
+            continue;
+        };
+        let Ok(mut cell) = cells.get_mut(entity.entity()) else {
+            continue;
+        };
+        cell.cell_type = CellType::Snake;
+    }
 }
 
 /// 处理蛇移动
@@ -60,7 +72,8 @@ fn handle_snake_move(
     time: Res<Time<Real>>,
     mut timer: ResMut<timer::SnakeMoveTimer>,
     game_config: Res<GameConfig>,
-    mut sync_cell_message: MessageWriter<SyncCellTypeMessage>,
+    grid_map: Res<GridMap>,
+    mut cells: Query<&mut Cell>,
     mut food_state: ResMut<SnakeFoodState>,
     mut game_status: ResMut<GameStatus>,
     mut game_state: ResMut<NextState<GameState>>,
@@ -71,28 +84,41 @@ fn handle_snake_move(
         return;
     }
 
+    let mut changed_cells = Vec::<(IVec2, CellType)>::new();
+
     match snake_state.step_forward(&game_config, &food_state.foods) {
         // 前进
         MoveOutcome::Advanced { enter, leave } => {
-            let mut message_data = SyncCellTypeMessage::default();
-
             if let Some(leave) = leave {
-                message_data = message_data.cell(leave, CellType::Empty);
+                changed_cells.push((leave, CellType::Empty));
             }
 
-            sync_cell_message.write(message_data.cell(enter, CellType::Snake));
+            changed_cells.push((enter, CellType::Snake));
         }
         // 吃到食物
         MoveOutcome::AteFood { food } => {
             food_state.try_eat_food(&food);
             game_status.add_score();
-            sync_cell_message.write(SyncCellTypeMessage::default().cell(food, CellType::Snake));
+            changed_cells.push((food, CellType::Snake));
         }
         // 撞墙
         MoveOutcome::Collided => {
             game_state.set(GameState::GameOver);
         }
+        MoveOutcome::None => {}
     };
+
+    if !changed_cells.is_empty() {
+        for (pos, cell_type) in changed_cells {
+            let Some(entity) = grid_map.get_entity(&pos) else {
+                continue;
+            };
+            let Ok(mut cell) = cells.get_mut(entity.entity()) else {
+                continue;
+            };
+            cell.cell_type = cell_type;
+        }
+    }
 }
 
 /// 蛇状态
@@ -116,6 +142,7 @@ impl SnakeState {
         self.segment_list = segment_list;
         self.current_direction = IVec2::ZERO;
         self.direction_queue = VecDeque::new();
+        info!("生成体");
     }
 
     /// 尝试将输入加入缓冲队列
@@ -156,16 +183,19 @@ impl SnakeState {
 
     /// 前进一步
     pub fn step_forward(&mut self, game_config: &GameConfig, foods: &Vec<IVec2>) -> MoveOutcome {
-        let _ = game_config;
-        // 获取头的位置, 随后基于头位置 + 方向计算头的下一步位置
-        let head_pos = self.segment_list.front().unwrap().clone();
-
         // 获取并更新方向
         let new_direction = self
             .direction_queue
             .pop_front()
             .unwrap_or(self.current_direction);
         self.current_direction = new_direction;
+
+        if new_direction == IVec2::ZERO {
+            return MoveOutcome::None;
+        };
+
+        // 获取头的位置, 随后基于头位置 + 方向计算头的下一步位置
+        let head_pos = self.segment_list.front().unwrap().clone();
 
         let new_head_pos = head_pos + new_direction;
 
